@@ -35,6 +35,7 @@ export function InstanceManagementPanel() {
     instancePanelTab,
     instanceConfigs,
     instanceStats,
+    localSyncStatuses,
     instances,
     closeInstancePanel,
     setInstancePanelTab,
@@ -137,6 +138,7 @@ export function InstanceManagementPanel() {
   const instanceId = selectedInstance._key;
   const instanceConfig = instanceId ? instanceConfigs[instanceId] : undefined;
   const instanceStat = instanceId ? instanceStats[instanceId] : undefined;
+  const localSyncStatus = instanceId ? localSyncStatuses[instanceId] : undefined;
 
   const lastSyncedLabel = selectedInstance.lastSynced
     ? `Synced ${selectedInstance.lastSynced}`
@@ -290,6 +292,7 @@ export function InstanceManagementPanel() {
               instance={selectedInstance}
               stats={instanceStat}
               connectorConfig={instanceConfig}
+              localSyncStatus={localSyncStatus}
             />
           </Tabs.Content>
           <Tabs.Content value="settings">
