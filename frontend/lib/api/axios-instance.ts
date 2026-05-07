@@ -16,12 +16,6 @@ declare module 'axios' {
   }
 }
 
-// Default to '' (same origin). Axios itself treats undefined baseURL the same
-// way, but `refreshAccessToken()` below does a raw `fetch(\`${API_BASE_URL}...\`)`
-// — template-concatenating `undefined` would produce the literal string
-// "undefined" in the URL and 404 via the Node.js backend's static handler.
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
-
 const API_TIMEOUT = 90_000;
 
 /** Backend signals refresh cannot recover; skip refresh and log out immediately. */
@@ -82,6 +76,7 @@ function isTokenExpired(token: string | null): boolean {
 }
 
 export const apiClient = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
   timeout: API_TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
@@ -89,11 +84,13 @@ export const apiClient = axios.create({
   withCredentials: true,
 });
 
-// Request interceptor — dynamic base URL, Electron cookie policy, proactive refresh, auth header
+// Request interceptor — proactive refresh, auth header.
+// In Electron: override baseURL with the user-configured URL and disable
+// withCredentials (auth uses Bearer tokens, not cookies).
 apiClient.interceptors.request.use(
   async (config) => {
-    config.baseURL = getApiBaseUrl();
     if (isElectron()) {
+      config.baseURL = getApiBaseUrl();
       config.withCredentials = false;
     }
 
