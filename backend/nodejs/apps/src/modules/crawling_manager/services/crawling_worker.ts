@@ -5,7 +5,6 @@ import { RedisConfig } from '../../../libs/types/redis.types';
 import { CrawlingJobData } from '../schema/interface';
 import { ConnectorsCrawlingService } from './connectors/connectors';
 import { CrawlingResult, ICrawlingTaskService } from './task/crawling_task_service';
-import { isLocalFsConnector } from '../../../utils/local-fs-connector-name';
 
 @injectable()
 export class CrawlingWorkerService {
@@ -49,11 +48,7 @@ export class CrawlingWorkerService {
       orgId,
       userId,
     };
-    if (isLocalFsConnector(connector)) {
-      this.logger.debug('Processing crawling job', processingMeta);
-    } else {
-      this.logger.info('Processing crawling job', processingMeta);
-    }
+    this.logger.info('Processing crawling job', processingMeta);
 
     try {
       // Update job progress
@@ -73,7 +68,7 @@ export class CrawlingWorkerService {
       await job.updateProgress(100);
 
       if (result?.skipped) {
-        this.logger.debug('Crawling job completed (skipped — nothing to do)', {
+        this.logger.info('Crawling job completed (skipped — nothing to do)', {
           jobId: job.id,
           connector,
           connectorId,
@@ -104,19 +99,14 @@ export class CrawlingWorkerService {
   private setupWorkerListeners(): void {
     this.worker.on('completed', (job: Job) => {
       const ret = job.returnvalue as CrawlingResult | undefined;
-      if (ret?.skipped) {
-        this.logger.debug('Job completed', {
+      this.logger.info(
+        ret?.skipped ? 'Job completed (skipped)' : 'Job completed',
+        {
           jobId: job.id,
           connector: job.data.connector,
           connectorId: job.data.connectorId,
-        });
-      } else {
-        this.logger.info('Job completed', {
-          jobId: job.id,
-          connector: job.data.connector,
-          connectorId: job.data.connectorId,
-        });
-      }
+        },
+      );
     });
 
     this.worker.on('failed', (job: Job | undefined, err: Error) => {
