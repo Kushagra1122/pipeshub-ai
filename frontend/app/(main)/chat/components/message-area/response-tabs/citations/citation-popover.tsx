@@ -4,7 +4,10 @@ import React, { memo } from 'react';
 import Link from 'next/link';
 import { Flex, Box, Text, Badge, Button } from '@radix-ui/themes';
 import { ConnectorIcon } from '@/app/components/ui/ConnectorIcon';
-import { isLocalFsConnectorType } from '@/app/(main)/workspace/connectors/utils/local-fs-helpers';
+import {
+  canOpenLocalFsInNativeFileManager,
+  isLocalFsConnectorType,
+} from '@/app/(main)/workspace/connectors/utils/local-fs-helpers';
 import { openRecordSource } from '@/chat/utils/open-record-source';
 import { getConnectorConfig } from './utils';
 import { FileIcon } from '@/app/components/ui/file-icon';
@@ -29,13 +32,15 @@ function CitationPopoverContentInner({
   // Determine if this is a collection (UPLOAD) or external connector source
   const isCollectionSource = citation.origin === 'UPLOAD';
   const isLocalFsSource = isLocalFsConnectorType(citation.connector ?? '');
+  const useNativeLocalFsOpen =
+    isLocalFsSource && canOpenLocalFsInNativeFileManager();
   const openInLabel = isCollectionSource ? 'Open in Collections' : `Open in ${config.label}`;
   const isAttachment = citation.connector?.toUpperCase() === 'ATTACHMENTS';
   const canOpenSource =
     !isAttachment &&
     (isCollectionSource ||
-      isLocalFsSource ||
-      (!citation.hideWeburl && !!citation.webUrl));
+      useNativeLocalFsOpen ||
+      (!isLocalFsSource && !citation.hideWeburl && !!citation.webUrl));
 
   const handleOpenInSource = async () => {
     if (isCollectionSource) {
@@ -70,7 +75,7 @@ function CitationPopoverContentInner({
         </Flex>
 
         <Flex align="center" gap="2">
-          {canOpenSource && !isLocalFsSource && !isCollectionSource && citation.webUrl && !citation.hideWeburl && (
+          {canOpenSource && !useNativeLocalFsOpen && !isCollectionSource && citation.webUrl && !citation.hideWeburl && (
             <Button asChild size="1" variant="outline" color="gray" tabIndex={-1}>
               <Link
                 href={citation.webUrl}
@@ -83,7 +88,7 @@ function CitationPopoverContentInner({
             </Button>
           )}
 
-          {canOpenSource && (isLocalFsSource || isCollectionSource) && (
+          {canOpenSource && (useNativeLocalFsOpen || isCollectionSource) && (
             <Button
               size="1"
               variant="outline"

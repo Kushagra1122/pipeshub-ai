@@ -3,7 +3,10 @@
 import React from 'react';
 import { Flex, Box, Text, Badge } from '@radix-ui/themes';
 import { ConnectorIcon } from '@/app/components/ui/ConnectorIcon';
-import { isLocalFsConnectorType } from '@/app/(main)/workspace/connectors/utils/local-fs-helpers';
+import {
+  canOpenLocalFsInNativeFileManager,
+  isLocalFsConnectorType,
+} from '@/app/(main)/workspace/connectors/utils/local-fs-helpers';
 import { openRecordSource } from '@/chat/utils/open-record-source';
 import { getConnectorConfig } from '../message-area/response-tabs/citations/utils';
 import type { SearchResultItem } from '@/chat/types';
@@ -24,16 +27,18 @@ export function SearchResultCard({
 
   const isCollectionSource = metadata.origin === 'UPLOAD';
   const isLocalFsSource = isLocalFsConnectorType(metadata.connector ?? '');
+  const useNativeLocalFsOpen =
+    isLocalFsSource && canOpenLocalFsInNativeFileManager();
   let openInLabel = `Open ${config.label}`;
-  if (isLocalFsSource) openInLabel = `Open in ${config.label}`;
+  if (useNativeLocalFsOpen) openInLabel = `Open in ${config.label}`;
   if (isCollectionSource) openInLabel = 'Open in Collections';
 
   const pageNums = metadata.pageNum?.filter((p): p is number => p !== null) ?? [];
   const blockNums = metadata.blockNum?.filter((b): b is number => b !== null) ?? [];
   const hasLocationBadges = pageNums.length > 0 || blockNums.length > 0;
   const canOpenSource =
-    isLocalFsSource ||
-    (!metadata.hideWeburl && !!metadata.webUrl);
+    useNativeLocalFsOpen ||
+    (!isLocalFsSource && !metadata.hideWeburl && !!metadata.webUrl);
 
   const handleOpenSource = async () => {
     await openRecordSource({

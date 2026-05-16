@@ -4,7 +4,10 @@ import React from 'react';
 import { Flex, Box, Text, Badge, Button } from '@radix-ui/themes';
 import { ChatStarIcon } from '@/app/components/ui/chat-star-icon';
 import { ConnectorIcon } from '@/app/components/ui/ConnectorIcon';
-import { isLocalFsConnectorType } from '@/app/(main)/workspace/connectors/utils/local-fs-helpers';
+import {
+  canOpenLocalFsInNativeFileManager,
+  isLocalFsConnectorType,
+} from '@/app/(main)/workspace/connectors/utils/local-fs-helpers';
 import { openRecordSource } from '@/chat/utils/open-record-source';
 import { getConnectorConfig, formatSyncLabel } from './utils';
 import { FileIcon } from '@/app/components/ui/file-icon';
@@ -56,6 +59,8 @@ export function ReferenceCard({
   // Determine if this is a collection (UPLOAD) or external connector source
   const isCollectionSource = citation.origin === 'UPLOAD';
   const isLocalFsSource = isLocalFsConnectorType(citation.connector ?? '');
+  const useNativeLocalFsOpen =
+    isLocalFsSource && canOpenLocalFsInNativeFileManager();
   const openInLabel = isCollectionSource ? 'Open in Collections' : `Open in ${config.label}`;
 
   // Chat attachments are stored with connector === "ATTACHMENTS". They live in
@@ -65,8 +70,8 @@ export function ReferenceCard({
   const canOpenSource =
     !isAttachment &&
     (isCollectionSource ||
-      isLocalFsSource ||
-      (!citation.hideWeburl && !!citation.webUrl));
+      useNativeLocalFsOpen ||
+      (!isLocalFsSource && !citation.hideWeburl && !!citation.webUrl));
 
   // ── handlers ──────────────────────────────────────────────────────────
   const handleOpenInSource = async () => {

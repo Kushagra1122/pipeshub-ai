@@ -2,7 +2,10 @@
 
 import { KnowledgeBaseApi } from '@/knowledge-base/api';
 import type { RecordDetailsResponse } from '@/knowledge-base/types';
-import { isLocalFsConnectorType } from '@/app/(main)/workspace/connectors/utils/local-fs-helpers';
+import {
+  canOpenLocalFsInNativeFileManager,
+  isLocalFsConnectorType,
+} from '@/app/(main)/workspace/connectors/utils/local-fs-helpers';
 
 interface ElectronLocalFsOpenPayload {
   connectorId: string;
@@ -89,6 +92,16 @@ export async function openRecordSource(
     if (input.webUrl && !input.hideWeburl) {
       openFallbackUrl(input.webUrl, deps, electronApi);
       return { opened: 'web', url: input.webUrl };
+    }
+    return { opened: 'none', error: 'Source URL is unavailable.' };
+  }
+
+  // Web cannot reveal files in Finder/Explorer; use the record webUrl when present.
+  if (!canOpenLocalFsInNativeFileManager()) {
+    const webUrl = input.webUrl?.trim();
+    if (webUrl && !input.hideWeburl) {
+      openFallbackUrl(webUrl, deps, electronApi);
+      return { opened: 'web', url: webUrl };
     }
     return { opened: 'none', error: 'Source URL is unavailable.' };
   }
